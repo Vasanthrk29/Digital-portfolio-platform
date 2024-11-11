@@ -1,0 +1,73 @@
+[tool.black]
+line-length = 80
+include = '\.pyi?$'
+exclude = '''
+/(
+    \.git
+  | \.hg
+  | \.mypy_cache
+  | \.tox
+  | \.venv
+  | _build
+  | buck-out
+  | build
+  | dist
+)/
+'''
+
+[tool.poetry]
+name = "app"
+version = "1.0.0"
+description = "Personal Portfolio Project"
+authors = ["Guillaume Bournique <gbournique@gmail.com>"]
+repository = "https://github.com/gbourniq/portfolio"
+readme = "README.md"
+keywords = ["portfolio"]
+
+[tool.poetry.dependencies]
+python = "^3.8"
+setuptools = "*"
+requests = "*"
+celery = "^4"
+django = "^3"
+django-celery-results = "^1.0"
+django-redis = "^4.10"
+django-redis-cache = "2.1.0"
+django-tinymce4-lite = "1.7.5"
+gunicorn = "^19.9"
+jsonschema = "*"
+redis = "^3"
+pillow = "^7.0.0"
+psycopg2 = "^2.8.4"
+django-storages = "^1.9.1"
+boto3 = "^1.12.39"
+django-materializecss-form = "^1.1.17"
+djangorestframework = "^3.11.0"
+django-filter = "^2.3.0"
+
+[tool.poetry.dev-dependencies]
+ansible = "^2.9.2"
+jinja2 = "^2.11.1"
+awscli = "^1.16.309"
+autoflake = "^1.3"
+black = "^19.3b0"
+boto = "2.49.0"
+botocore = "^1.15.39"
+bump2version = "0.5.11"
+cython = "^0.29"
+isort = "^4.3.4"
+pre-commit = "^2.1"
+pylint = "^2.3.1"
+pytest = "^5.3"
+pytest-cov = "^2.8"
+pytest-django = "^3.9.0"
+pytest-env = "^0.6.2"
+pytest-ordering = "^0.6"
+pytest-regressions = "^2.0"
+pytest-testmon = "^1.0"
+setuptools_scm = "^3.5"
+flake8 = "^3.8.3"
+
+[build-system]
+requires = ["poetry>=1.0.0"]
+build-backend = "poetry.masonry.api"

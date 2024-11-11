@@ -1,0 +1,160 @@
+version: "3.5"
+
+services:
+  nginx:
+    image: nginx:1.17-alpine
+    container_name: nginx
+    restart: always
+    volumes: 
+        - ./nginx/conf.d:/etc/nginx/conf.d
+        - ./nginx/certs:/etc/nginx/certs
+    healthcheck:
+      test: stat /etc/nginx/conf.d/nginx.conf && nginx -t || exit 1
+      interval: 60s
+      timeout: 10s
+      retries: 5
+    ports: 
+      - "80:80"
+      - "443:443"
+    networks:
+      - proxy
+    depends_on:
+      - app
+
+  app:
+    image: ${IMAGE_REPOSITORY:?}:latest
+    container_name: app
+    restart: "no"
+    environment:
+      # Settings.py
+      BUILD: ${BUILD:?}
+      PYTHONPATH: ${DOCKER_PORTFOLIO_HOME:?}
+      SECRET_KEY: ${SECRET_KEY:?}
+      LOGGING_ENABLED: ${LOGGING_ENABLED:?}
+      # Postgres
+      POSTGRES_DB: ${POSTGRES_DB:?}
+      POSTGRES_USER: ${POSTGRES_USER:?}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?}
+      POSTGRES_HOST: ${POSTGRES_HOST:?}
+      POSTGRES_PORT: ${POSTGRES_PORT:?}
+      # Redis
+      REDIS_HOST: ${REDIS_HOST:?}
+      REDIS_PORT: ${REDIS_PORT:?}
+      # Email Contact page
+      EMAIL_HOST_USER: ${EMAIL_HOST_USER}
+      EMAIL_HOST_PASSWORD: ${EMAIL_HOST_PASSWORD}
+      # aws s3 - should be docker/k8s secret
+      AWS_STORAGE_BUCKET_NAME: ${AWS_STORAGE_BUCKET_NAME:?}
+      AWS_DEFAULT_REGION: ${AWS_DEFAULT_REGION:?}
+    volumes:
+      - redisdata:/data
+      - ./app/prod.startup_server.sh:${DOCKER_APP_CODE}/prod.startup_server.sh
+    healthcheck:
+      test: curl -f -s -S http://localhost:8080 || exit 1
+      interval: 30s
+      timeout: 120s
+      retries: 10
+    expose: 
+      - 8080
+    networks:
+      - backend
+      - proxy
+    entrypoint:
+      - ${DOCKER_APP_CODE:?}/prod.startup_server.sh
+    depends_on:
+      - postgres
+      - redis
+
+  worker:
+    image: ${IMAGE_REPOSITORY:?}:latest
+    container_name: worker
+    restart: "no"
+    environment:
+      # Settings.py
+      BUILD: ${BUILD:?}
+      PYTHONPATH: ${DOCKER_PORTFOLIO_HOME:?}
+      SECRET_KEY: ${SECRET_KEY:?}
+      LOGGING_ENABLED: ${LOGGING_ENABLED:?}
+      # Postgres
+      POSTGRES_DB: ${POSTGRES_DB:?}
+      POSTGRES_USER: ${POSTGRES_USER:?}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?}
+      POSTGRES_HOST: ${POSTGRES_HOST:?}
+      POSTGRES_PORT: ${POSTGRES_PORT:?}
+      # Redis
+      REDIS_HOST: ${REDIS_HOST:?}
+      REDIS_PORT: ${REDIS_PORT:?}
+      # Email Contact page
+      EMAIL_HOST_USER: ${EMAIL_HOST_USER}
+      EMAIL_HOST_PASSWORD: ${EMAIL_HOST_PASSWORD}
+      # aws s3 - should be docker/k8s secret
+      AWS_STORAGE_BUCKET_NAME: ${AWS_STORAGE_BUCKET_NAME:?}
+      AWS_DEFAULT_REGION: ${AWS_DEFAULT_REGION:?}
+    volumes:
+      - redisdata:/data
+      - ./app/startup_celery.sh:${DOCKER_APP_CODE}/startup_celery.sh
+    healthcheck:
+      test: ps | grep celery || exit 1
+      interval: 30s
+      timeout: 120s
+      retries: 10
+    expose: 
+      - 8081
+    networks:
+      - backend
+      - proxy
+    entrypoint:
+      - ${DOCKER_APP_CODE:?}/startup_celery.sh
+
+  postgres:
+    image: postgres:12-alpine
+    container_name: postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:?}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?}
+      POSTGRES_DB: ${POSTGRES_DB:?}
+      POSTGRES_INITDB_ARGS: "--encoding='UTF-8'"
+    volumes:
+      - ./postgres/config/postgres.conf:/etc/postgres/postgres.conf:ro
+      - ./postgres/docker-entrypoint-initdb.d/:/docker-entrypoint-initdb.d/
+      - pgdata:/var/lib/postgresql/data/ 
+      - pglogs:/var/lib/postgresql/pglogs/
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    expose:
+      - 5432
+    networks:
+      - backend
+
+  redis:
+    image: redis:alpine
+    container_name: redis
+    restart: "no"
+    volumes:
+      - ./redis:/healthcheck/
+      - redisdata:/data
+    healthcheck:
+      test: sh /healthcheck/redis_healthcheck.sh
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    expose:
+      - 6379
+    networks:
+      - backend
+
+
+volumes:
+  redisdata:
+  pgdata:
+  pglogs:
+
+networks:
+  backend:
+    driver: bridge
+  proxy:
+    driver: bridge

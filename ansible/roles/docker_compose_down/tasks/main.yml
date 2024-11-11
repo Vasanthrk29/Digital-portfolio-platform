@@ -1,0 +1,13 @@
+
+- name: docker-compose down
+  become_user: ec2-user
+  shell: >
+    cd {{ PORTFOLIO_ROOT_DIR }} &&
+    cd deployment/ &&
+    source .env &&
+    make down
+  args:
+    executable: /bin/bash
+  environment:
+    AWS_ACCESS_KEY_ID: "{{ AWS_ACCESS_KEY_ID }}"
+    AWS_SECRET_ACCESS_KEY: "{{ AWS_SECRET_ACCESS_KEY }}"

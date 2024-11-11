@@ -1,0 +1,8 @@
+- name: Stop instance(s)
+  ec2:
+    instance_ids:
+      - "{{ ANSIBLE_INSTANCE_ID }}"
+    region: "{{ AWS_DEFAULT_REGION }}"
+    state: stopped
+    wait: True
+    assign_public_ip: yes

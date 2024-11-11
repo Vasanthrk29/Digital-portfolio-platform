@@ -1,0 +1,7 @@
+name: portfolio
+channels:
+  - default
+  - conda-forge
+dependencies:
+  - python=3.8.0
+  - poetry=1.0.5
